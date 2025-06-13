@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>토론최 - 검열 없는 진짜 익명 토론 사이트</title>
+  <title>검열 없는 진짜 익명 토론 사이트</title>
   <style>
     body, html {
       margin: 0; padding: 0; height: 100%;
@@ -72,36 +72,7 @@
       position: relative;
       font-size: 0.95rem;
       word-break: break-word;
-    }
-    .comment.left {
-      background: #ffdddd;
-      color: #a00;
-      margin-right: auto;
-      border-bottom-left-radius: 0;
-    }
-    .comment.right {
-      background: #ddffdd;
-      color: #080;
-      margin-left: auto;
-      border-bottom-right-radius: 0;
-    }
-    .comment.left::after {
-      content: "";
-      position: absolute;
-      left: -10px;
-      top: 10px;
-      border-width: 10px 10px 10px 0;
-      border-style: solid;
-      border-color: transparent #ffdddd transparent transparent;
-    }
-    .comment.right::after {
-      content: "";
-      position: absolute;
-      right: -10px;
-      top: 10px;
-      border-width: 10px 0 10px 10px;
-      border-style: solid;
-      border-color: transparent transparent transparent #ddffdd;
+      white-space: pre-wrap;
     }
     .nickname {
       font-weight: 700;
@@ -124,11 +95,11 @@
       box-sizing: border-box;
       resize: vertical;
     }
-    .radio-group {
+    .input-row {
       display: flex;
-      gap: 20px;
+      justify-content: space-between;
+      gap: 10px;
       align-items: center;
-      font-size: 0.95rem;
     }
     button {
       background-color: #4caf50;
@@ -153,7 +124,7 @@
         <h1>토론 주제: <span id="topic">로딩중...</span></h1>
         <a href="admin.html" class="admin-link">debatechoi.shop</a>
       </header>
-      
+
       <section class="discussion-area" id="discussion">
         <p style="color:#666; text-align:center;">댓글이 아직 없습니다.</p>
       </section>
@@ -161,13 +132,10 @@
       <section class="input-area">
         <input type="text" id="nickname" placeholder="닉네임 입력 (기본값: 최)" />
         <textarea id="comment" rows="3" placeholder="댓글 내용을 입력하세요"></textarea>
-
-        <div class="radio-group">
-          <label><input type="radio" name="side" value="pro" checked /> 찬성</label>
-          <label><input type="radio" name="side" value="con" /> 반대</label>
+        <div class="input-row">
+          <label>글자색: <input type="color" id="colorPicker" value="#000000"></label>
+          <button id="sendBtn">댓글 달기</button>
         </div>
-
-        <button id="sendBtn">댓글 달기</button>
       </section>
     </main>
     <div class="side-space"></div>
@@ -190,7 +158,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 토론 주제 실시간 반영
     const topicRef = ref(db, "topic");
     const topicElem = document.getElementById("topic");
 
@@ -199,7 +166,6 @@
       topicElem.textContent = topic || "아직 설정된 토론 주제가 없습니다.";
     });
 
-    // 댓글 실시간 반영
     const discussionElem = document.getElementById("discussion");
     const commentsRef = ref(db, "comments");
 
@@ -215,7 +181,7 @@
       Object.entries(data).forEach(([key, comment]) => {
         const div = document.createElement("div");
         div.classList.add("comment");
-        div.classList.add(comment.side === "pro" ? "right" : "left");
+        div.style.color = comment.color || "#000";
 
         const nick = document.createElement("div");
         nick.className = "nickname";
@@ -232,11 +198,10 @@
       discussionElem.scrollTop = discussionElem.scrollHeight;
     });
 
-    // 댓글 작성
     document.getElementById("sendBtn").addEventListener("click", () => {
       const nicknameInput = document.getElementById("nickname");
       const commentInput = document.getElementById("comment");
-      const sideInput = document.querySelector('input[name="side"]:checked');
+      const colorInput = document.getElementById("colorPicker");
 
       let nickname = nicknameInput.value.trim();
       if (!nickname) nickname = "최";
@@ -247,13 +212,13 @@
         return;
       }
 
-      const side = sideInput.value;
+      const color = colorInput.value;
 
       const newCommentRef = push(commentsRef);
       set(newCommentRef, {
         nickname,
         text,
-        side,
+        color,
         timestamp: Date.now()
       });
 
