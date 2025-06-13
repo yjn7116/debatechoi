@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>토론최 - 검열 없는 진짜 익명 토론 사이트</title>
+  <title>실시간 토론 사이트</title>
+  <link rel="icon" href="logo.png" type="image/png" />
   <style>
+    /* 기존 스타일 유지 */
     body, html {
       margin: 0; padding: 0; height: 100%;
       font-family: "Noto Sans KR", sans-serif;
@@ -32,32 +34,24 @@
       padding-bottom: 10px;
       border-bottom: 2px solid #ccc;
       margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    h1 {
+    header h1 {
       margin: 0;
       font-weight: 700;
       font-size: 1.5rem;
+      display: inline-block;
+      vertical-align: middle;
+      flex-grow: 1;
     }
     .admin-link {
-      position: absolute;
-      right: 0;
-      top: 0;
       font-size: 0.9rem;
       color: #aaa;
       text-decoration: none;
       cursor: pointer;
       user-select: none;
-    }
-    .external-link {
-      display: block;
-      margin-top: 5px;
-      font-size: 0.9rem;
-      color: #aaa;
-      text-decoration: none;
-      user-select: none;
-    }
-    .external-link:hover {
-      text-decoration: underline;
     }
     .discussion-area {
       flex-grow: 1;
@@ -156,9 +150,9 @@
     <div class="side-space"></div>
     <main class="content">
       <header>
-        <h1>오늘의 토론 주제: <span id="topic">로딩중...</span></h1>
-        <a href="admin.html" class="admin-link">검열 없는 진짜 토론 사이트</a>
-        <a href="https://minjoopolice.com/" class="external-link" target="_blank" rel="noopener noreferrer">민주 파출소</a>
+        <img src="logo.png" alt="사이트 로고" style="height:40px; vertical-align:middle;" />
+        <h1>오늘의 토론 주제: <span id="topic">여기에 토론 주제가 표시됩니다</span></h1>
+        <a href="admin.html" class="admin-link">관리자 페이지로 이동</a>
       </header>
       
       <section class="discussion-area" id="discussion">
@@ -182,7 +176,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+    import { getDatabase, ref, onValue, set, push } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCFq__DB_6TnNVUG4Z3De7vpRnxynn8MjE",
@@ -197,71 +191,45 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 토론 주제 실시간 반영
-    const topicRef = ref(db, "topic");
-    const topicElem = document.getElementById("topic");
+    const topicEl = document.getElementById("topic");
+    const discussionEl = document.getElementById("discussion");
+    const nicknameInput = document.getElementById("nickname");
+    const commentInput = document.getElementById("comment");
+    const sendBtn = document.getElementById("sendBtn");
 
+    // 토론 주제 실시간 표시
+    const topicRef = ref(db, "topic");
     onValue(topicRef, (snapshot) => {
       const topic = snapshot.val();
-      topicElem.textContent = topic || "아직 설정된 토론 주제가 없습니다.";
+      topicEl.textContent = topic || "토론 주제가 없습니다.";
     });
 
-    // 댓글 표시 영역
-    const discussionElem = document.getElementById("discussion");
-
-    // 댓글 실시간 감지 및 표시
+    // 댓글 실시간 표시
     const commentsRef = ref(db, "comments");
     onValue(commentsRef, (snapshot) => {
-      const data = snapshot.val();
-      discussionElem.innerHTML = ""; // 초기화
-
-      if (!data) {
-        discussionElem.innerHTML = '<p style="color:#666; text-align:center;">댓글이 아직 없습니다.</p>';
+      const comments = snapshot.val();
+      discussionEl.innerHTML = "";
+      if (!comments) {
+        discussionEl.innerHTML = '<p style="color:#666; text-align:center;">댓글이 아직 없습니다.</p>';
         return;
       }
-
-      // 댓글 하나씩 표시
-      Object.entries(data).forEach(([key, comment]) => {
+      for (const key in comments) {
+        const c = comments[key];
         const div = document.createElement("div");
-        div.classList.add("comment");
-        div.classList.add(comment.side === "pro" ? "right" : "left");
-
-        const nick = document.createElement("div");
-        nick.className = "nickname";
-        nick.textContent = comment.nickname || "최";
-        div.appendChild(nick);
-
-        const text = document.createElement("div");
-        text.textContent = comment.text;
-        div.appendChild(text);
-
-        discussionElem.appendChild(div);
-      });
-
-      discussionElem.scrollTop = discussionElem.scrollHeight; // 자동 스크롤
+        div.className = "comment " + (c.side === "pro" ? "right" : "left");
+        div.innerHTML = `<div class="nickname">${c.nickname}</div>${c.text}`;
+        discussionEl.appendChild(div);
+      }
+      discussionEl.scrollTop = discussionEl.scrollHeight;
     });
 
-    // 댓글 작성
-    document.getElementById("sendBtn").addEventListener("click", () => {
-      const nicknameInput = document.getElementById("nickname");
-      const commentInput = document.getElementById("comment");
-      const sideInput = document.querySelector('input[name="side"]:checked');
-
-      let nickname = nicknameInput.value.trim();
-      if (!nickname) nickname = "최";
-
+    // 댓글 추가
+    sendBtn.addEventListener("click", () => {
+      const nickname = nicknameInput.value.trim() || "최";
       const text = commentInput.value.trim();
-      if (!text) {
-        alert("댓글 내용을 입력하세요.");
-        return;
-      }
-
-      const side = sideInput.value;
+      const side = document.querySelector('input[name="side"]:checked').value;
+      if (!text) return alert("댓글 내용을 입력하세요.");
 
       const newCommentRef = push(commentsRef);
-      set(newCommentRef, {
-        nickname,
-        text,
-        side,
-        timestamp: Date.now()
-      });
+      set(newCommentRef, { nickname, text, side });
+      commentInput.value =
