@@ -167,8 +167,8 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js?v=2";
-    import { getDatabase, ref, onValue, push, set, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js?v=2";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getDatabase, ref, onValue, push, set, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCFq__DB_6TnNVUG4Z3De7vpRnxynn8MjE",
@@ -183,13 +183,14 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    // 토론 주제 표시
     const topicRef = ref(db, "topic");
     const topicElem = document.getElementById("topic");
-
     onValue(topicRef, (snapshot) => {
       topicElem.textContent = snapshot.val() || "아직 설정된 토론 주제가 없습니다.";
     });
 
+    // 댓글 표시
     const discussionElem = document.getElementById("discussion");
     const commentsRef = ref(db, "comments");
 
@@ -202,7 +203,10 @@
         return;
       }
 
-      Object.values(data).forEach(comment => {
+      // 댓글을 timestamp 순으로 정렬
+      const sortedComments = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
+
+      sortedComments.forEach(comment => {
         const div = document.createElement("div");
         div.classList.add("comment", comment.side === "pro" ? "right" : "left");
         div.style.color = comment.color || "#000000";
@@ -222,7 +226,7 @@
       discussionElem.scrollTop = discussionElem.scrollHeight;
     });
 
-    // 댓글창 배경색 반영
+    // 배경색 실시간 반영
     const bgRef = ref(db, "settings/backgroundColor");
     const discussionArea = document.getElementById("discussion");
     const bgPicker = document.getElementById("bgColorPicker");
@@ -246,8 +250,7 @@
       const sideInput = document.querySelector('input[name="side"]:checked');
       const colorPicker = document.getElementById("textColorPicker");
 
-      let nickname = nicknameInput.value.trim();
-      if (!nickname) nickname = "최";
+      let nickname = nicknameInput.value.trim() || "최";
       const text = commentInput.value.trim();
       if (!text) return alert("댓글 내용을 입력하세요.");
 
