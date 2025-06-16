@@ -3,150 +3,84 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>토론최 - 검열 없는 진짜 익명토론 사이트</title>
+  <title>관리자 페이지</title>
   <style>
-    body, html {
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
       margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: "Noto Sans KR", sans-serif;
-      background: #f9f9f9;
-      color: #222;
+      padding: 30px;
+      background-color: #f5f5f5;
+      color: #333;
     }
-    .container {
-      display: flex;
-      height: 100vh;
-    }
-    .side-space {
-      flex: 1;
-      background: #f0f0f0;
-    }
-    .content {
-      flex: 2;
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
-      box-sizing: border-box;
-      background: #fff;
-    }
-    header {
-      position: relative;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #ccc;
+
+    h1 {
+      font-size: 1.6rem;
       margin-bottom: 20px;
     }
-    h1 {
-      margin: 0;
-      font-weight: 700;
-      font-size: 1.5rem;
+
+    label {
+      font-weight: bold;
     }
-    .admin-link {
-      position: absolute;
-      right: 0;
-      top: 0;
-      font-size: 0.9rem;
-      color: #aaa;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    .external-link {
-      display: block;
-      margin-top: 5px;
-      font-size: 0.9rem;
-      color: #aaa;
-      text-decoration: none;
-    }
-    .external-link:hover {
-      text-decoration: underline;
-    }
-    .discussion-area {
-      flex-grow: 1;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 15px;
-      overflow-y: auto;
-      transition: background-color 0.3s;
-    }
-    .comment {
-      max-width: 60%;
-      margin-bottom: 10px;
-      padding: 10px 15px;
-      border-radius: 15px;
-      background: #eee;
-      position: relative;
-      font-size: 0.95rem;
-      word-break: break-word;
-    }
-    .nickname {
-      font-weight: 700;
-      margin-bottom: 3px;
-      font-size: 0.85rem;
-      opacity: 0.7;
-    }
-    .input-area {
-      margin-top: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    input[type="text"], textarea {
+
+    input[type="text"] {
+      width: 100%;
+      max-width: 400px;
       padding: 10px;
       font-size: 1rem;
-      border-radius: 6px;
+      margin: 10px 0 20px;
       border: 1px solid #ccc;
-      width: 100%;
-      box-sizing: border-box;
-      resize: vertical;
+      border-radius: 6px;
     }
+
     button {
+      padding: 10px 15px;
+      font-size: 1rem;
+      margin-right: 10px;
       background-color: #4caf50;
       color: white;
       border: none;
       border-radius: 6px;
-      padding: 10px 15px;
       cursor: pointer;
-      font-size: 1rem;
-      transition: background-color 0.3s ease;
-      align-self: flex-end;
     }
+
     button:hover {
-      background-color: #45a045;
+      background-color: #43a047;
+    }
+
+    .danger {
+      background-color: #e53935;
+    }
+
+    .danger:hover {
+      background-color: #d32f2f;
+    }
+
+    .back {
+      margin-top: 30px;
+      display: inline-block;
+      color: #555;
+      text-decoration: underline;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="side-space"></div>
-    <main class="content">
-      <header>
-        <h1>주제: <span id="topic">로딩중...</span></h1>
-        <a href="admin.html" class="admin-link">토론최.온라인.한국</a>
-        <a href="https://minjoopolice.com/" class="external-link" target="_blank" rel="noopener noreferrer">민주 파출소</a>
-      </header>
+  <h1>관리자 설정</h1>
 
-      <section class="discussion-area" id="discussion">
-        <p style="color:#666; text-align:center;">댓글이 아직 없습니다.</p>
-      </section>
+  <label for="topicInput">토론 주제 변경</label><br />
+  <input type="text" id="topicInput" placeholder="새로운 토론 주제를 입력하세요" />
+  <button id="updateBtn">주제 업데이트</button>
 
-      <label>댓글창 배경색:
-        <input type="color" id="bgColorPicker">
-      </label>
+  <hr style="margin: 30px 0;" />
 
-      <section class="input-area">
-        <input type="text" id="nickname" placeholder="닉네임 입력 (기본값: 최)" />
-        <textarea id="comment" rows="3" placeholder="댓글 내용을 입력하세요"></textarea>
-        <label>댓글 텍스트 색상:
-          <input type="color" id="textColorPicker" value="#000000" />
-        </label>
-        <button id="sendBtn">댓글 달기</button>
-      </section>
-    </main>
-    <div class="side-space"></div>
-  </div>
+  <h2>댓글 전체 초기화</h2>
+  <button id="resetBtn" class="danger">모든 댓글 삭제</button>
+
+  <p class="back" onclick="location.href='index.html'">← 메인 페이지로 돌아가기</p>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+    import { getDatabase, ref, set, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCFq__DB_6TnNVUG4Z3De7vpRnxynn8MjE",
@@ -161,74 +95,25 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const topicRef = ref(db, "topic");
-    const topicElem = document.getElementById("topic");
-
-    onValue(topicRef, (snapshot) => {
-      topicElem.textContent = snapshot.val() || "아직 설정된 토론 주제가 없습니다.";
-    });
-
-    const discussionElem = document.getElementById("discussion");
-    const commentsRef = ref(db, "comments");
-
-    onValue(commentsRef, (snapshot) => {
-      const data = snapshot.val();
-      discussionElem.innerHTML = "";
-
-      if (!data) {
-        discussionElem.innerHTML = '<p style="color:#666; text-align:center;">댓글이 아직 없습니다.</p>';
-        return;
+    // 주제 업데이트
+    document.getElementById("updateBtn").addEventListener("click", () => {
+      const topicInput = document.getElementById("topicInput").value.trim();
+      if (topicInput) {
+        set(ref(db, "topic"), topicInput).then(() => {
+          alert("토론 주제가 업데이트되었습니다!");
+        });
+      } else {
+        alert("주제를 입력하세요.");
       }
-
-      Object.values(data).forEach(comment => {
-        const div = document.createElement("div");
-        div.classList.add("comment");
-        const nick = document.createElement("div");
-        nick.className = "nickname";
-        nick.textContent = comment.nickname || "최";
-        const text = document.createElement("div");
-        text.innerText = comment.text;
-        if (comment.color) text.style.color = comment.color;
-
-        div.appendChild(nick);
-        div.appendChild(text);
-        discussionElem.appendChild(div);
-      });
-
-      discussionElem.scrollTop = discussionElem.scrollHeight;
     });
 
-    document.getElementById("sendBtn").addEventListener("click", () => {
-      const nickname = document.getElementById("nickname").value.trim() || "최";
-      const comment = document.getElementById("comment").value.trim();
-      const textColor = document.getElementById("textColorPicker").value;
-
-      if (!comment) {
-        alert("댓글 내용을 입력하세요.");
-        return;
+    // 댓글 전체 삭제
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      if (confirm("정말로 모든 댓글을 삭제하시겠습니까?")) {
+        remove(ref(db, "comments")).then(() => {
+          alert("댓글이 모두 삭제되었습니다.");
+        });
       }
-
-      push(commentsRef, {
-        nickname,
-        text: comment,
-        color: textColor,
-        timestamp: Date.now()
-      });
-
-      document.getElementById("comment").value = "";
-    });
-
-    const bgColorPicker = document.getElementById("bgColorPicker");
-    const bgColorRef = ref(db, "bgColor");
-
-    bgColorPicker.addEventListener("input", () => {
-      set(bgColorRef, bgColorPicker.value);
-    });
-
-    onValue(bgColorRef, (snapshot) => {
-      const color = snapshot.val() || "#fafafa";
-      discussionElem.style.backgroundColor = color;
-      bgColorPicker.value = color;
     });
   </script>
 </body>
