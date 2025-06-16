@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>검열 없는 진짜 익명 토론 사이트</title>
+  <title>토론최 - 검열 없는 진짜 익명 토론 사이트</title>
   <style>
     body, html {
       margin: 0; padding: 0; height: 100%;
       font-family: "Noto Sans KR", sans-serif;
-      background: #f9f9f9;
       color: #222;
     }
     .container {
@@ -25,7 +24,6 @@
       flex-direction: column;
       padding: 20px;
       box-sizing: border-box;
-      background: #fff;
     }
     header {
       position: relative;
@@ -53,16 +51,14 @@
       color: #aaa;
       text-decoration: none;
     }
-    .external-link:hover {
-      text-decoration: underline;
-    }
     .discussion-area {
       flex-grow: 1;
-      background: #fafafa;
       border: 1px solid #ddd;
       border-radius: 6px;
       padding: 15px;
       overflow-y: auto;
+      background-color: #fff;
+      transition: background-color 0.3s ease;
     }
     .comment {
       max-width: 60%;
@@ -73,6 +69,18 @@
       font-size: 0.95rem;
       word-break: break-word;
       white-space: pre-wrap;
+    }
+    .comment.left {
+      background: #ffdddd;
+      color: #a00;
+      margin-right: auto;
+      border-bottom-left-radius: 0;
+    }
+    .comment.right {
+      background: #ddffdd;
+      color: #080;
+      margin-left: auto;
+      border-bottom-right-radius: 0;
     }
     .nickname {
       font-weight: 700;
@@ -95,11 +103,16 @@
       box-sizing: border-box;
       resize: vertical;
     }
-    .input-row {
+    .color-group {
       display: flex;
-      justify-content: space-between;
-      gap: 10px;
+      gap: 20px;
       align-items: center;
+    }
+    .radio-group {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      font-size: 0.95rem;
     }
     button {
       background-color: #4caf50;
@@ -121,8 +134,8 @@
     <div class="side-space"></div>
     <main class="content">
       <header>
-        <h1>토론 주제: <span id="topic">로딩중...</span></h1>
-        <a href="admin.html" class="admin-link">debatechoi.shop</a>
+        <h1>주제: <span id="topic">로딩중...</span></h1>
+        <a href="admin.html" class="admin-link">토론최.온라인.한국</a>
       </header>
 
       <section class="discussion-area" id="discussion">
@@ -132,18 +145,30 @@
       <section class="input-area">
         <input type="text" id="nickname" placeholder="닉네임 입력 (기본값: 최)" />
         <textarea id="comment" rows="3" placeholder="댓글 내용을 입력하세요"></textarea>
-        <div class="input-row">
-          <label>글자색: <input type="color" id="colorPicker" value="#000000"></label>
-          <button id="sendBtn">댓글 달기</button>
+
+        <div class="radio-group">
+          <label><input type="radio" name="side" value="pro" checked /> 찬성</label>
+          <label><input type="radio" name="side" value="con" /> 반대</label>
         </div>
+
+        <div class="color-group">
+          <label>댓글 텍스트 색상:
+            <input type="color" id="textColorPicker" value="#000000" />
+          </label>
+          <label>댓글창 배경색:
+            <input type="color" id="bgColorPicker" value="#ffffff" />
+          </label>
+        </div>
+
+        <button id="sendBtn">댓글 달기</button>
       </section>
     </main>
     <div class="side-space"></div>
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js?v=2";
+    import { getDatabase, ref, onValue, push, set, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js?v=2";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCFq__DB_6TnNVUG4Z3De7vpRnxynn8MjE",
@@ -162,8 +187,7 @@
     const topicElem = document.getElementById("topic");
 
     onValue(topicRef, (snapshot) => {
-      const topic = snapshot.val();
-      topicElem.textContent = topic || "아직 설정된 토론 주제가 없습니다.";
+      topicElem.textContent = snapshot.val() || "아직 설정된 토론 주제가 없습니다.";
     });
 
     const discussionElem = document.getElementById("discussion");
@@ -178,49 +202,60 @@
         return;
       }
 
-      Object.entries(data).forEach(([key, comment]) => {
+      Object.values(data).forEach(comment => {
         const div = document.createElement("div");
-        div.classList.add("comment");
-        div.style.color = comment.color || "#000";
+        div.classList.add("comment", comment.side === "pro" ? "right" : "left");
+        div.style.color = comment.color || "#000000";
 
         const nick = document.createElement("div");
         nick.className = "nickname";
         nick.textContent = comment.nickname || "최";
-        div.appendChild(nick);
 
         const text = document.createElement("div");
         text.textContent = comment.text;
-        div.appendChild(text);
 
+        div.appendChild(nick);
+        div.appendChild(text);
         discussionElem.appendChild(div);
       });
 
       discussionElem.scrollTop = discussionElem.scrollHeight;
     });
 
+    // 댓글창 배경색 반영
+    const bgRef = ref(db, "settings/backgroundColor");
+    const discussionArea = document.getElementById("discussion");
+    const bgPicker = document.getElementById("bgColorPicker");
+
+    onValue(bgRef, (snapshot) => {
+      const color = snapshot.val();
+      if (color) {
+        discussionArea.style.backgroundColor = color;
+        bgPicker.value = color;
+      }
+    });
+
+    bgPicker.addEventListener("input", () => {
+      update(ref(db, "settings"), { backgroundColor: bgPicker.value });
+    });
+
+    // 댓글 작성
     document.getElementById("sendBtn").addEventListener("click", () => {
       const nicknameInput = document.getElementById("nickname");
       const commentInput = document.getElementById("comment");
-      const colorInput = document.getElementById("colorPicker");
+      const sideInput = document.querySelector('input[name="side"]:checked');
+      const colorPicker = document.getElementById("textColorPicker");
 
       let nickname = nicknameInput.value.trim();
       if (!nickname) nickname = "최";
-
       const text = commentInput.value.trim();
-      if (!text) {
-        alert("댓글 내용을 입력하세요.");
-        return;
-      }
+      if (!text) return alert("댓글 내용을 입력하세요.");
 
-      const color = colorInput.value;
+      const side = sideInput.value;
+      const color = colorPicker.value;
 
       const newCommentRef = push(commentsRef);
-      set(newCommentRef, {
-        nickname,
-        text,
-        color,
-        timestamp: Date.now()
-      });
+      set(newCommentRef, { nickname, text, side, color, timestamp: Date.now() });
 
       commentInput.value = "";
     });
